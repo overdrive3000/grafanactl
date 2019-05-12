@@ -14,13 +14,11 @@ limitations under the License.
 package app
 
 import (
-	"os"
-
 	"github.com/overdrive3000/grafanactl/cmd/grafanactl/app/cmd"
 )
 
 // Run execute main command
 func Run() error {
-	c := cmd.NewGrafanaCommand(os.Stdout, os.Stderr)
+	c := cmd.NewGrafanaCommand()
 	return c.Execute()
 }

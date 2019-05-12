@@ -15,6 +15,8 @@ import (
 var (
 	v       string
 	cfgFile string
+	url     string
+	key     string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -24,10 +26,6 @@ var rootCmd = &cobra.Command{
 	Short:   "A grafana CLI interface",
 	Long: `A CLI which allows to perform operations in a Grafana
 installation via command line by using Grafana's API.`,
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -59,9 +57,9 @@ func initConfig() {
 }
 
 // NewGrafanaCommand add subcommands to main CLI
-func NewGrafanaCommand(out, err io.Writer) *cobra.Command {
+func NewGrafanaCommand() *cobra.Command {
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if err := SetUpLogs(err, v); err != nil {
+		if err := SetUpLogs(os.Stdout, v); err != nil {
 			return err
 		}
 		rootCmd.SilenceUsage = true
@@ -71,11 +69,22 @@ func NewGrafanaCommand(out, err io.Writer) *cobra.Command {
 	}
 
 	rootCmd.SilenceErrors = true
-	rootCmd.AddCommand(folderCmd)
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.grafanactl.yaml)")
+	// Grafana configuration flags
+	rootCmd.PersistentFlags().StringVar(&url, "url", "", "Grafana URL (https://localhost:3000)")
+	rootCmd.PersistentFlags().StringVar(&key, "key", "", "Grafana API Key")
 
+	// Bind flags to config file
+	if err := viper.BindPFlag("url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
+		log.Error(err)
+	}
+	viper.BindPFlag("apiKey", rootCmd.PersistentFlags().Lookup("key"))
+
+	rootCmd.AddCommand(folderCmd)
+
+	cobra.OnInitialize(initConfig)
 	return rootCmd
 }
 

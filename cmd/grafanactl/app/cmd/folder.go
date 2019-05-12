@@ -15,9 +15,12 @@
 package cmd
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // folderCmd represents the folder command
@@ -31,5 +34,7 @@ var folderCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("folder invoked!")
 		log.Debug("Debug enabled")
+		fmt.Println("Grafana URL:", viper.GetString("url"))
+		fmt.Println("Grafana API Key:", viper.GetString("apiKey"))
 	},
 }
