@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -30,9 +30,6 @@ var folderCmd = &cobra.Command{
 * List Folders`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("folder invoked!")
+		log.Debug("Debug enabled")
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(folderCmd)
 }
