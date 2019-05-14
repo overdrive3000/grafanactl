@@ -17,24 +17,81 @@ package cmd
 import (
 	"fmt"
 
+	gapi "github.com/overdrive3000/go-grafana-api"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+var (
+	id  int64
+	uid string
+)
+
+// SetUpClient set up a new grafana client
+func SetUpClient() (*gapi.Client, error) {
+	log.Debugf("Setting up grafana client with url %s and key %s", viper.GetString("url"), viper.GetString("apiKey"))
+	return gapi.New(
+		viper.GetString("apiKey"),
+		viper.GetString("url"),
+	)
+}
+
 // folderCmd represents the folder command
-var folderCmd = &cobra.Command{
-	Use:   "folder",
-	Short: "Grafana Folders",
-	Long: `Perform operations against Grafana Folders:
+func folderCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "folder <get, list, create, delete>",
+		Short: "Grafana Folders",
+		Long: `Perform operations against Grafana Folders:
 
 * Create Folders
-* List Folders`,
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("folder invoked!")
-		log.Debug("Debug enabled")
-		fmt.Println("Grafana URL:", viper.GetString("url"))
-		fmt.Println("Grafana API Key:", viper.GetString("apiKey"))
-	},
+* List Folders
+* Search Folders`,
+	}
+	cmd.AddCommand(getFolderCmd())
+
+	return cmd
+}
+
+// folderByUIDCmd search a folder by UID in Grafana
+func getFolderCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get",
+		Short: "Search a folder",
+		Long: `Search a folder either by ID or UID
+grafanactl folder get 
+[--id <value>]
+[--uid <value>]`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flag("id").Changed && !cmd.Flag("uid").Changed {
+				return errors.New("Either --id or --uid must be specified")
+			}
+			if cmd.Flag("id").Changed && cmd.Flag("uid").Changed {
+				return errors.New("Just one flag --id or --uid is allowed at a time")
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Debug("Getting Grafana Folder")
+			client, _ := SetUpClient()
+			var err error
+			var folder *gapi.Folder
+			if cmd.Flag("id").Changed {
+				folder, err = client.Folder(id)
+			}
+			if cmd.Flag("uid").Changed {
+				folder, err = client.FolderByUID(uid)
+			}
+			if err != nil {
+				log.Error(err)
+			}
+			fmt.Println(folder)
+		},
+	}
+	cmd.Flags().Int64Var(&id, "id", 0, "Folder ID to search")
+	cmd.Flags().StringVar(&uid, "uid", "", "Folder UID to search")
+
+	return cmd
 }

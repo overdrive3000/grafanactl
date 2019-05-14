@@ -82,9 +82,11 @@ func NewGrafanaCommand() *cobra.Command {
 	}
 	viper.BindPFlag("apiKey", rootCmd.PersistentFlags().Lookup("key"))
 
-	rootCmd.AddCommand(folderCmd)
-
 	cobra.OnInitialize(initConfig)
+
+	// Add main commands
+	rootCmd.AddCommand(folderCmd())
+
 	return rootCmd
 }
 
