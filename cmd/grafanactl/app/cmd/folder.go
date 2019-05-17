@@ -15,7 +15,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+
+	"github.com/gosuri/uitable"
 
 	gapi "github.com/overdrive3000/go-grafana-api"
 	log "github.com/sirupsen/logrus"
@@ -51,11 +55,45 @@ func folderCmd() *cobra.Command {
 * Search Folders`,
 	}
 	cmd.AddCommand(getFolderCmd())
+	cmd.AddCommand(listFoldersCmd())
 
 	return cmd
 }
 
-// folderByUIDCmd search a folder by UID in Grafana
+func listFoldersCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all Folders",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Debug("Listing Grafana Folders")
+			client, _ := SetUpClient()
+			var folders []gapi.Folder
+			var out []byte
+			folders, err := client.Folders()
+			if err != nil {
+				log.Error(err)
+			}
+
+			switch cmd.Flag("output").Value.String() {
+			case "json":
+				out, err = json.Marshal(folders)
+				if err != nil {
+					log.Error(err)
+				}
+			case "table":
+				out = formatAsTable(folders, 60)
+			default:
+				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
+			}
+
+			fmt.Fprintln(os.Stdout, string(out))
+		},
+	}
+
+	return cmd
+}
+
 func getFolderCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -78,6 +116,7 @@ grafanactl folder get
 			client, _ := SetUpClient()
 			var err error
 			var folder *gapi.Folder
+			var out []byte
 			if cmd.Flag("id").Changed {
 				folder, err = client.Folder(id)
 			}
@@ -87,11 +126,36 @@ grafanactl folder get
 			if err != nil {
 				log.Error(err)
 			}
-			fmt.Println(folder)
+			switch cmd.Flag("output").Value.String() {
+			case "json":
+				out, err = json.Marshal(folder)
+				if err != nil {
+					log.Error(err)
+				}
+			case "table":
+				folders := []gapi.Folder{*folder}
+				out = formatAsTable(folders, 60)
+			default:
+				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
+			}
+
+			fmt.Fprintln(os.Stdout, string(out))
 		},
 	}
 	cmd.Flags().Int64Var(&id, "id", 0, "Folder ID to search")
 	cmd.Flags().StringVar(&uid, "uid", "", "Folder UID to search")
 
 	return cmd
+}
+
+func formatAsTable(folders []gapi.Folder, colWidth uint) []byte {
+	tbl := uitable.New()
+	log.Debugf("%#v", folders)
+	tbl.MaxColWidth = colWidth
+	tbl.AddRow("ID", "UID", "TITLE")
+	for i := 0; i <= len(folders)-1; i++ {
+		f := folders[i]
+		tbl.AddRow(f.Id, f.Uid, f.Title)
+	}
+	return tbl.Bytes()
 }

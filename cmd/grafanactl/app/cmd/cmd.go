@@ -12,12 +12,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	v       string
+type globalOpts struct {
+	verbose string
 	cfgFile string
 	url     string
 	key     string
-)
+	output  string
+}
+
+var config string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -30,9 +33,9 @@ installation via command line by using Grafana's API.`,
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
+	if config != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(config)
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -58,8 +61,10 @@ func initConfig() {
 
 // NewGrafanaCommand add subcommands to main CLI
 func NewGrafanaCommand() *cobra.Command {
+	opts := &globalOpts{}
+
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if err := SetUpLogs(os.Stdout, v); err != nil {
+		if err := SetUpLogs(os.Stdout, &opts.verbose); err != nil {
 			return err
 		}
 		rootCmd.SilenceUsage = true
@@ -70,11 +75,12 @@ func NewGrafanaCommand() *cobra.Command {
 
 	rootCmd.SilenceErrors = true
 
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, warn, error)")
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.grafanactl.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&opts.verbose, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, warn, error)")
+	rootCmd.PersistentFlags().StringVarP(&opts.cfgFile, "config", "c", "", "config file (default is $HOME/.grafanactl.yaml)")
 	// Grafana configuration flags
-	rootCmd.PersistentFlags().StringVar(&url, "url", "", "Grafana URL (https://localhost:3000)")
-	rootCmd.PersistentFlags().StringVar(&key, "key", "", "Grafana API Key")
+	rootCmd.PersistentFlags().StringVar(&opts.url, "url", "", "Grafana URL (https://localhost:3000)")
+	rootCmd.PersistentFlags().StringVar(&opts.key, "key", "", "Grafana API Key")
+	rootCmd.PersistentFlags().StringVarP(&opts.output, "output", "o", "table", "Output format (table, json)")
 
 	// Bind flags to config file
 	if err := viper.BindPFlag("url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
@@ -82,6 +88,7 @@ func NewGrafanaCommand() *cobra.Command {
 	}
 	viper.BindPFlag("apiKey", rootCmd.PersistentFlags().Lookup("key"))
 
+	config = opts.cfgFile
 	cobra.OnInitialize(initConfig)
 
 	// Add main commands
@@ -91,9 +98,9 @@ func NewGrafanaCommand() *cobra.Command {
 }
 
 // SetUpLogs set up logrus configuration
-func SetUpLogs(out io.Writer, level string) error {
+func SetUpLogs(out io.Writer, verbose *string) error {
 	log.SetOutput(out)
-	lvl, err := log.ParseLevel(v)
+	lvl, err := log.ParseLevel(*verbose)
 	if err != nil {
 		return err
 	}
