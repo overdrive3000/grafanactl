@@ -6,6 +6,7 @@ import (
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
+	gapi "github.com/overdrive3000/go-grafana-api"
 	"github.com/overdrive3000/grafanactl/pkg/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -29,6 +30,15 @@ var rootCmd = &cobra.Command{
 	Short:   "A grafana CLI interface",
 	Long: `A CLI which allows to perform operations in a Grafana
 installation via command line by using Grafana's API.`,
+}
+
+// SetUpClient set up a new grafana client
+func SetUpClient() (*gapi.Client, error) {
+	log.Debugf("Setting up grafana client with url %s and key %s", viper.GetString("url"), viper.GetString("apiKey"))
+	return gapi.New(
+		viper.GetString("apiKey"),
+		viper.GetString("url"),
+	)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -93,6 +103,7 @@ func NewGrafanaCommand() *cobra.Command {
 
 	// Add main commands
 	rootCmd.AddCommand(folderCmd())
+	rootCmd.AddCommand(dashboardCmd())
 
 	return rootCmd
 }

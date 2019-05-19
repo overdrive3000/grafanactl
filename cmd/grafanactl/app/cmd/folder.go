@@ -27,17 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-// SetUpClient set up a new grafana client
-func SetUpClient() (*gapi.Client, error) {
-	log.Debugf("Setting up grafana client with url %s and key %s", viper.GetString("url"), viper.GetString("apiKey"))
-	return gapi.New(
-		viper.GetString("apiKey"),
-		viper.GetString("url"),
-	)
-}
 
 // folderCmd represents the folder command
 func folderCmd() *cobra.Command {
@@ -64,7 +54,7 @@ func deleteFolderCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a Folder",
 		Long: `Delete a grafana folder
-grafanactl delete --uid <value>`,
+grafanactl folder delete --uid <value>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			log.Debug("Deleting Folder")
 			client, _ := SetUpClient()
@@ -164,7 +154,7 @@ func listFoldersCmd() *cobra.Command {
 					os.Exit(1)
 				}
 			case "table":
-				out = formatAsTable(folders, 60)
+				out = folderAsTable(folders, 60)
 			default:
 				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
 				os.Exit(1)
@@ -221,7 +211,7 @@ grafanactl folder get
 				}
 			case "table":
 				folders := []gapi.Folder{*folder}
-				out = formatAsTable(folders, 60)
+				out = folderAsTable(folders, 60)
 			default:
 				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
 				os.Exit(1)
@@ -236,7 +226,7 @@ grafanactl folder get
 	return cmd
 }
 
-func formatAsTable(folders []gapi.Folder, colWidth uint) []byte {
+func folderAsTable(folders []gapi.Folder, colWidth uint) []byte {
 	tbl := uitable.New()
 	log.Debugf("%#v", folders)
 	tbl.MaxColWidth = colWidth
