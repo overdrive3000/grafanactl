@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/gosuri/uitable"
@@ -27,11 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	id  int64
-	uid string
 )
 
 // SetUpClient set up a new grafana client
@@ -56,6 +52,64 @@ func folderCmd() *cobra.Command {
 	}
 	cmd.AddCommand(getFolderCmd())
 	cmd.AddCommand(listFoldersCmd())
+	cmd.AddCommand(createFolderCmd())
+
+	return cmd
+}
+
+func createFolderCmd() *cobra.Command {
+	var file, uid, title string
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a Folder",
+		Long: `Creates a new Grafana Folder
+grafanactl create [--title <value> [--uid <value]]
+grafanactl create [--file|-f <value>]`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flag("file").Changed && (cmd.Flag("uid").Changed || cmd.Flag("title").Changed) {
+				return errors.New("Flag --file cannot be using with --uid or --title")
+			}
+			if !cmd.Flag("file").Changed && !cmd.Flag("title").Changed {
+				return errors.New("Either --file or --title must be specified")
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Debug("Creating a new Folder")
+			client, _ := SetUpClient()
+			var folder gapi.Folder
+			var err error
+			if cmd.Flag("file").Changed {
+				file, err := ioutil.ReadFile(cmd.Flag("file").Value.String())
+				if err != nil {
+					log.Debug(err)
+					os.Exit(1)
+				}
+				_ = json.Unmarshal(file, &folder)
+				uid = folder.Uid
+				title = folder.Title
+			}
+			switch uid {
+			case "":
+				folder, err = client.NewFolder(title)
+				if err != nil {
+					log.Error(err)
+					os.Exit(1)
+				}
+			default:
+				folder, err = client.NewFolderWithUID(title, uid)
+				if err != nil {
+					log.Error(err)
+					os.Exit(1)
+				}
+			}
+			fmt.Printf("folder id %d created\n", folder.Id)
+		},
+	}
+
+	cmd.Flags().StringVar(&title, "title", "", "Create folder with title <value>")
+	cmd.Flags().StringVar(&uid, "uid", "", "Create folder with UID <value>")
+	cmd.Flags().StringVarP(&file, "file", "f", "", "Create folder from json file <value>")
 
 	return cmd
 }
@@ -73,6 +127,7 @@ func listFoldersCmd() *cobra.Command {
 			folders, err := client.Folders()
 			if err != nil {
 				log.Error(err)
+				os.Exit(1)
 			}
 
 			switch cmd.Flag("output").Value.String() {
@@ -80,11 +135,13 @@ func listFoldersCmd() *cobra.Command {
 				out, err = json.Marshal(folders)
 				if err != nil {
 					log.Error(err)
+					os.Exit(1)
 				}
 			case "table":
 				out = formatAsTable(folders, 60)
 			default:
 				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
+				os.Exit(1)
 			}
 
 			fmt.Fprintln(os.Stdout, string(out))
@@ -95,6 +152,8 @@ func listFoldersCmd() *cobra.Command {
 }
 
 func getFolderCmd() *cobra.Command {
+	var id int64
+	var uid string
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Search a folder",
@@ -125,18 +184,21 @@ grafanactl folder get
 			}
 			if err != nil {
 				log.Error(err)
+				os.Exit(1)
 			}
 			switch cmd.Flag("output").Value.String() {
 			case "json":
 				out, err = json.Marshal(folder)
 				if err != nil {
 					log.Error(err)
+					os.Exit(1)
 				}
 			case "table":
 				folders := []gapi.Folder{*folder}
 				out = formatAsTable(folders, 60)
 			default:
 				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
+				os.Exit(1)
 			}
 
 			fmt.Fprintln(os.Stdout, string(out))

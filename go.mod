@@ -14,7 +14,7 @@ require (
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/overdrive3000/go-grafana-api v0.0.0-20190514203404-2acd1c1d048e
+	github.com/overdrive3000/go-grafana-api v0.0.0-20190519082511-7c083a46076f
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/afero v1.2.2 // indirect

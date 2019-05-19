@@ -42,6 +42,8 @@ github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQz
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/overdrive3000/go-grafana-api v0.0.0-20190514203404-2acd1c1d048e h1:dQfrlLgD6+AxIoADsI3/yfvaGJjRzHfp0+5A3DCXSUY=
 github.com/overdrive3000/go-grafana-api v0.0.0-20190514203404-2acd1c1d048e/go.mod h1:qEZpFX3A2gCdWWNHMINR4RiJAH7qqDxjSyXSJ/j89SY=
+github.com/overdrive3000/go-grafana-api v0.0.0-20190519082511-7c083a46076f h1:Ddcp53BQmsyfXuMpGYjrgn+/KJumYRgUS57ww3+fQcw=
+github.com/overdrive3000/go-grafana-api v0.0.0-20190519082511-7c083a46076f/go.mod h1:qEZpFX3A2gCdWWNHMINR4RiJAH7qqDxjSyXSJ/j89SY=
 github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
