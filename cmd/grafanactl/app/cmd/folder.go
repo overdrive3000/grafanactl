@@ -53,6 +53,32 @@ func folderCmd() *cobra.Command {
 	cmd.AddCommand(getFolderCmd())
 	cmd.AddCommand(listFoldersCmd())
 	cmd.AddCommand(createFolderCmd())
+	cmd.AddCommand(deleteFolderCmd())
+
+	return cmd
+}
+
+func deleteFolderCmd() *cobra.Command {
+	var uid string
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a Folder",
+		Long: `Delete a grafana folder
+grafanactl delete --uid <value>`,
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Debug("Deleting Folder")
+			client, _ := SetUpClient()
+			err := client.DeleteFolder(uid)
+			if err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+			fmt.Printf("Folder %s deleted\n", uid)
+		},
+	}
+
+	cmd.Flags().StringVar(&uid, "uid", "", "Folder UID")
+	cmd.MarkFlagRequired("uid")
 
 	return cmd
 }
