@@ -169,7 +169,7 @@ func listFoldersCmd() *cobra.Command {
 
 func getFolderCmd() *cobra.Command {
 	var id int64
-	var uid string
+	var uid, name string
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Search a folder",
@@ -178,11 +178,11 @@ grafanactl folder get
 [--id <value>]
 [--uid <value>]`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !cmd.Flag("id").Changed && !cmd.Flag("uid").Changed {
-				return errors.New("Either --id or --uid must be specified")
+			if !cmd.Flag("id").Changed && !cmd.Flag("uid").Changed && !cmd.Flag("name").Changed {
+				return errors.New("Either --id, --uid, or --name must be specified")
 			}
-			if cmd.Flag("id").Changed && cmd.Flag("uid").Changed {
-				return errors.New("Just one flag --id or --uid is allowed at a time")
+			if cmd.Flag("id").Changed && cmd.Flag("uid").Changed && cmd.Flag("name").Changed {
+				return errors.New("Just one flag --id, --uid, or --name is allowed at a time")
 			}
 			return nil
 		},
@@ -191,12 +191,18 @@ grafanactl folder get
 			client, _ := SetUpClient()
 			var err error
 			var folder *gapi.Folder
+			var folders []gapi.Folder
 			var out []byte
 			if cmd.Flag("id").Changed {
 				folder, err = client.Folder(id)
+				folders = []gapi.Folder{*folder}
 			}
 			if cmd.Flag("uid").Changed {
 				folder, err = client.FolderByUID(uid)
+				folders = []gapi.Folder{*folder}
+			}
+			if cmd.Flag("name").Changed {
+				folders, err = client.SearchFolder(name)
 			}
 			if err != nil {
 				log.Error(err)
@@ -204,13 +210,12 @@ grafanactl folder get
 			}
 			switch cmd.Flag("output").Value.String() {
 			case "json":
-				out, err = json.Marshal(folder)
+				out, err = json.Marshal(folders)
 				if err != nil {
 					log.Error(err)
 					os.Exit(1)
 				}
 			case "table":
-				folders := []gapi.Folder{*folder}
 				out = folderAsTable(folders, 60)
 			default:
 				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
@@ -222,6 +227,7 @@ grafanactl folder get
 	}
 	cmd.Flags().Int64Var(&id, "id", 0, "Folder ID to search")
 	cmd.Flags().StringVar(&uid, "uid", "", "Folder UID to search")
+	cmd.Flags().StringVar(&name, "name", "", "Folder's name to search")
 
 	return cmd
 }

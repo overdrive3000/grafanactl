@@ -43,6 +43,7 @@ func dashboardCmd() *cobra.Command {
 	cmd.AddCommand(getDashboardCmd())
 	cmd.AddCommand(createDashboardCmd())
 	cmd.AddCommand(deleteDashboardCmd())
+	cmd.AddCommand(searchDashboardCmd())
 
 	return cmd
 }
@@ -105,13 +106,62 @@ grafanactl dashboard create --file|-f <value>`,
 	return cmd
 }
 
-// in progress
+func searchDashboardCmd() *cobra.Command {
+	var name, folder string
+	cmd := &cobra.Command{
+		Use:   "search",
+		Short: "Search a dashboard",
+		Long: `Search a dashboard by Name or Folder ID
+grafanactl dashboard get --name <value>
+grafanactl dashboard get --folder-id <value>
+grafanactl dashboard get --name <value> --folder-id <value>`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flag("name").Changed && !cmd.Flag("folder-id").Changed {
+				return errors.New("Either --name or --folder-id must be specified")
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Debug("Searching Grafana Dashboard")
+
+			var out []byte
+
+			client, _ := SetUpClient()
+
+			dashboards, err := client.SearchDashboard(name, folder)
+			if err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+			switch cmd.Flag("output").Value.String() {
+			case "json":
+				out, err = json.Marshal(dashboards)
+				if err != nil {
+					log.Error(err)
+					os.Exit(1)
+				}
+			case "table":
+				out = dashboardsAsTable(dashboards, 90)
+			default:
+				log.Error(errors.New(fmt.Sprintf("unknown output format %q", cmd.Flag("output").Value.String())))
+				os.Exit(1)
+			}
+
+			fmt.Fprintln(os.Stdout, string(out))
+		},
+	}
+	cmd.Flags().StringVar(&name, "name", "", "Dashboard name to search")
+	cmd.Flags().StringVar(&folder, "folder-id", "", "Folder ID to search in for dashboards")
+
+	return cmd
+}
+
 func getDashboardCmd() *cobra.Command {
 	var uid string
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Search a dashboard",
-		Long: `Search a dashboard by UID
+		Short: "Get a dashboard",
+		Long: `Get a dashboard by UID
 grafanactl dashboard get --uid <value>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			log.Debug("Getting Grafana Dashboard")
@@ -145,6 +195,18 @@ grafanactl dashboard get --uid <value>`,
 	cmd.MarkFlagRequired("uid")
 
 	return cmd
+}
+
+func dashboardsAsTable(dashboards []gapi.Dashboards, colWidth uint) []byte {
+	tbl := uitable.New()
+	log.Debugf("%#v", dashboards)
+	tbl.MaxColWidth = colWidth
+	tbl.AddRow("ID", "UID", "TITLE", "FOLDER NAME", "FOLDER ID", "FOLDER UID")
+	for i := 0; i <= len(dashboards)-1; i++ {
+		d := dashboards[i]
+		tbl.AddRow(d.ID, d.UID, d.Title, d.FolderTitle, d.FolderID, d.FolderUID)
+	}
+	return tbl.Bytes()
 }
 
 func dashboardAsTable(dashboards []gapi.Dashboard, colWidth uint) []byte {
