@@ -18,6 +18,9 @@ BIN := grafanactl
 # Where to push the docker image.
 REGISTRY ?= overdrive3000
 
+# Where to upload releases
+GITHUB_USER := overdrive3000
+
 # This version-strategy uses git tags to set the version string
 VERSION := $(shell git describe --tags --always --dirty)
 #
@@ -30,7 +33,7 @@ VERSION := $(shell git describe --tags --always --dirty)
 
 SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
 
-ALL_PLATFORMS := linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/s390x
+ALL_PLATFORMS := linux/amd64 windows/amd64 darwin/amd64
 
 # Used internally.  Users should pass GOOS and/or GOARCH.
 OS := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
@@ -111,9 +114,14 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 	        VERSION=$(VERSION)                                  \
 	        ./build/build.sh                                    \
 	    "
-	@if ! cmp -s .go/$(OUTBIN) $(OUTBIN); then \
-	    mv .go/$(OUTBIN) $(OUTBIN);            \
-	    date >$@;                              \
+	@if ! cmp -s .go/$(OUTBIN) $(OUTBIN); then        \
+		if echo "${OUTBIN}" | grep -q "windows"; then \
+			mv .go/$(OUTBIN).exe $(OUTBIN).exe;       \
+			date >$@;                                 \
+		else										  \
+	    	mv .go/$(OUTBIN) $(OUTBIN);               \
+	    	date >$@;                                 \
+		fi											  \
 	fi
 
 # Example: make shell CMD="-c 'date > datefile'"
@@ -192,6 +200,14 @@ test: $(BUILD_DIRS)
 
 $(BUILD_DIRS):
 	@mkdir -p $@
+
+release: $(BUILD_DIRS)
+	@github-release upload 		\
+	--user $(GITHUB_USER)  		\
+	--repo grafanactl      		\
+	--tag $(VERSION)       		\
+	--name $(BIN)-$(OS)-$(ARCH) \
+	--file bin/$(OS)_$(ARCH)/$(BIN)
 
 clean: container-clean bin-clean
 

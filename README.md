@@ -4,7 +4,12 @@
 
 # Installation
 
-TODO
+Download latest release:
+
+```
+curl --silent --location "https://github.com/overdrive3000/grafanactl/releases/download/latest_release/grafanactl-$(uname -s)-amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/grafanactl /usr/local/bin
+```
 
 # Usage
 
