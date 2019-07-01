@@ -18,9 +18,6 @@ BIN := grafanactl
 # Where to push the docker image.
 REGISTRY ?= overdrive3000
 
-# Where to upload releases
-GITHUB_USER := overdrive3000
-
 # This version-strategy uses git tags to set the version string
 VERSION := $(shell git describe --tags --always --dirty)
 #
@@ -200,14 +197,6 @@ test: $(BUILD_DIRS)
 
 $(BUILD_DIRS):
 	@mkdir -p $@
-
-release: $(BUILD_DIRS)
-	@github-release upload 		\
-	--user $(GITHUB_USER)  		\
-	--repo grafanactl      		\
-	--tag $(VERSION)       		\
-	--name $(BIN)-$(OS)-$(ARCH) \
-	--file bin/$(OS)_$(ARCH)/$(BIN)
 
 clean: container-clean bin-clean
 
