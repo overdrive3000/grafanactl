@@ -7,9 +7,12 @@
 Download latest release:
 
 ```
-curl --silent --location "https://github.com/overdrive3000/grafanactl/releases/download/latest_release/grafanactl-$(uname -s)-amd64.tar.gz" | tar xz -C /tmp
-sudo mv /tmp/grafanactl /usr/local/bin
+curl --silent --location "https://github.com/overdrive3000/grafanactl/releases/download/latest_release/grafanactl-darwin-amd64"
+sudo mv grafanactl-darwin-amd64 /usr/local/bin/grafanactl
+sudo chmod +x /usr/local/bin/grafanactl
 ```
+
+Check here the release for your OS https://github.com/overdrive3000/grafanactl/releases/tag/0.1.2
 
 # Usage
 
